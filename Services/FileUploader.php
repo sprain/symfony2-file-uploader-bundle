@@ -18,7 +18,24 @@ class FileUploader
      */
     public function getFiles($options = array())
     {
-        return $this->options['file_manager']->getFiles($options);
+        $options = array_merge($this->options, $options);
+
+        $folder = $options['file_base_path'] . '/' . $options['folder'];
+        if (file_exists($folder))
+        {
+            $dirs = glob("$folder/originals/*");
+            $fullPath = isset($options['full_path']) ? $options['full_path'] : false;
+            if ($fullPath)
+            {
+                return $dirs;
+            }
+            $result = array_map(function($s) { return basename($s); }, $dirs);
+            return $result;
+        }
+        else
+        {
+            return array();
+        }
     }
 
     /**
@@ -28,7 +45,22 @@ class FileUploader
      */
     public function removeFiles($options = array())
     {
-        return $this->options['file_manager']->removeFiles($options);
+        $options = array_merge($this->options, $options);
+
+
+        $folder = $options['file_base_path'] . '/' . $options['folder'];
+
+        if (!strlen(trim($options['file_base_path'])))
+        {
+            throw Exception("file_base_path option looks empty, bailing out");
+        }
+
+        if (!strlen(trim($options['folder'])))
+        {
+            throw Exception("folder option looks empty, bailing out");
+        }
+
+        system("rm -rf " . escapeshellarg($folder));
     }
 
     /**
@@ -44,7 +76,52 @@ class FileUploader
      */
     public function syncFiles($options = array())
     {
-        return $this->options['file_manager']->syncFiles($options);
+        $options = array_merge($this->options, $options);
+
+        // We're syncing and potentially deleting folders, so make sure
+        // we were passed something - make it a little harder to accidentally
+        // trash your site
+        if (!strlen(trim($options['file_base_path'])))
+        {
+            throw Exception("file_base_path option looks empty, bailing out");
+        }
+        if (!strlen(trim($options['from_folder'])))
+        {
+            throw Exception("from_folder option looks empty, bailing out");
+        }
+        if (!strlen(trim($options['to_folder'])))
+        {
+            throw Exception("to_folder option looks empty, bailing out");
+        }
+
+        $from = $options['file_base_path'] . '/' . $options['from_folder'];
+        $to = $options['file_base_path'] . '/' . $options['to_folder'];
+        $slashes = substr_count($from, '/');
+        if (file_exists($from))
+        {
+            if (isset($options['create_to_folder']) && $options['create_to_folder'])
+            {
+                @mkdir($to, 0777, true);
+            }
+            elseif (!file_exists($to))
+            {
+                throw new Exception("to_folder does not exist");
+            }
+            system("rsync -a --delete " . escapeshellarg($from . '/') . " " . escapeshellarg($to), $result);
+            if ($result !== 0)
+            {
+                throw new Exception("Sync failed");
+            }
+            if (isset($options['remove_from_folder']) && $options['remove_from_folder'])
+            {
+                system("rm -rf " . escapeshellarg($from));
+            }
+        }
+        else
+        {
+            // A missing from_folder is not an error. This is commonly the case
+            // when syncing from something that has nothing attached to it yet, etc.
+        }
     }
 
     /**
@@ -72,7 +149,7 @@ class FileUploader
     {
         if (!isset($options['folder']))
         {
-            throw new \Exception("You must pass the 'folder' option to distinguish this set of files from others");
+            throw new Exception("You must pass the 'folder' option to distinguish this set of files from others");
         }
 
         $options = array_merge($this->options, $options);
@@ -103,14 +180,14 @@ class FileUploader
         }
 
         @mkdir($uploadDir, 0777, true);
+
         $upload_handler = new \PunkAve\FileUploaderBundle\BlueImp\UploadHandler(
             array(
                 'upload_dir' => $uploadDir, 
                 'upload_url' => $webPath . '/' . $originals['folder'] . '/', 
                 'script_url' => $options['request']->getUri(),
                 'image_versions' => $sizes,
-                'accept_file_types' => $allowedExtensionsRegex,
-                'max_number_of_files' => $options['max_number_of_files'],
+                'accept_file_types' => $allowedExtensionsRegex
             ));
 
         // From https://github.com/blueimp/jQuery-File-Upload/blob/master/server/php/index.php
@@ -118,13 +195,13 @@ class FileUploader
         // keeping the blueimp implementation which goes straight to the PHP standard library.
         // TODO: would be nice to port that code fully to Symfonyspeak.
 
-        header('Pragma: no-cache');
+       /* header('Pragma: no-cache');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Content-Disposition: inline; filename="files.json"');
         header('X-Content-Type-Options: nosniff');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: OPTIONS, HEAD, GET, POST, PUT, DELETE');
-        header('Access-Control-Allow-Headers: X-File-Name, X-File-Type, X-File-Size');
+        header('Access-Control-Allow-Headers: X-File-Name, X-File-Type, X-File-Size'); */
 
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'OPTIONS':
@@ -149,6 +226,6 @@ class FileUploader
 
         // Without this Symfony will try to respond; the BlueImp upload handler class already did,
         // so it's time to hush up
-        exit(0);
+        #exit(0);
     }
 }

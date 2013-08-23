@@ -54,13 +54,14 @@ class UploadHandler
                     'max_height' => 1200,
                     'jpeg_quality' => 95
                 ),
-                */
+
                 'thumbnail' => array(
                     'upload_dir' => dirname($_SERVER['SCRIPT_FILENAME']).'/thumbnails/',
                     'upload_url' => $this->getFullUrl().'/thumbnails/',
                     'max_width' => 80,
                     'max_height' => 80
                 )
+                */
             )
         );
         if ($options) {
@@ -357,8 +358,9 @@ class UploadHandler
         } else {
             $info = $this->get_file_objects();
         }
-        header('Content-type: application/json');
-        echo json_encode($info);
+        #header('Content-type: application/json');
+        #echo json_encode($info);
+        return true;
     }
 
     public function post() {
@@ -401,21 +403,22 @@ class UploadHandler
                 isset($upload['error']) ? $upload['error'] : null
             );
         }
-        header('Vary: Accept');
+        #header('Vary: Accept');
         $json = json_encode($info);
         $redirect = isset($_REQUEST['redirect']) ?
             stripslashes($_REQUEST['redirect']) : null;
         if ($redirect) {
-            header('Location: '.sprintf($redirect, rawurlencode($json)));
-            return;
+            #header('Location: '.sprintf($redirect, rawurlencode($json)));
+            #return;
         }
         if (isset($_SERVER['HTTP_ACCEPT']) &&
             (strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)) {
-            header('Content-type: application/json');
+            #header('Content-type: application/json');
         } else {
-            header('Content-type: text/plain');
+            #header('Content-type: text/plain');
         }
-        echo $json;
+        #echo $json;
+        return true;
     }
 
     public function delete() {
@@ -431,8 +434,9 @@ class UploadHandler
                 }
             }
         }
-        header('Content-type: application/json');
-        echo json_encode($success);
+        #header('Content-type: application/json');
+        #echo json_encode($success);
+        return true;
     }
 
 }

@@ -1,19 +1,16 @@
 function PunkAveFileUploader(options)
 {
-  var self = this,
-    uploadUrl = options.uploadUrl,
-    viewUrl = options.viewUrl,
-    $el = $(options.el),
-    uploaderTemplate = _.template($.trim($('#file-uploader-template').html()));
+  var self = this;
+  self.uploading = false;
+  var uploadUrl = options.uploadUrl;
+  var viewUrl = options.viewUrl;
+  var $el = $(options.el);
+  uploaderTemplate = _.template($('#file-uploader-template').html());
   $el.html(uploaderTemplate({}));
 
-  var fileTemplate = _.template($.trim($('#file-uploader-file-template').html())),
-    editor = $el.find('[data-files="1"]'),
-    thumbnails = $el.find('[data-thumbnails="1"]');
-  
-  self.uploading = false;
-  
-  self.errorCallback = 'errorCallback' in options ? options.errorCallback : function( info ) { if (window.console && console.log) { console.log(info) } },
+  fileTemplate = _.template($('#file-uploader-file-template').html());
+  editor = $el.find('[data-files="1"]');
+  thumbnails = $el.find('[data-thumbnails="1"]');
 
   self.addExistingFiles = function(files)
   {
@@ -21,7 +18,7 @@ function PunkAveFileUploader(options)
       appendEditableImage({
         // cmsMediaUrl is a global variable set by the underscoreTemplates partial of MediaItems.html.twig
         'thumbnail_url': viewUrl + '/thumbnails/' + file,
-        'url': viewUrl + '/originals/' + file,
+        'url': uploadUrl + '/originals/' + file,
         'name': file
         });
     });
@@ -83,7 +80,7 @@ function PunkAveFileUploader(options)
     stop: function (e) {
       $el.find('[data-spinner="1"]').hide();
       self.uploading = false;
-    }
+    },
   });
 
   // Expects thumbnail_url, url, and name properties. thumbnail_url can be undefined if
@@ -91,9 +88,9 @@ function PunkAveFileUploader(options)
   // result returned by the UploadHandler class on the PHP side
   function appendEditableImage(info)
   {
+    // TODO: share the error's specifics
     if (info.error)
     {
-      self.errorCallback(info);
       return;
     }
     var li = $(fileTemplate(info));

@@ -1,5 +1,4 @@
 parameters:
-  file_uploader.max_number_of_files: ~
   file_uploader.file_base_path: "%kernel.root_dir%/../web/uploads"
   file_uploader.web_base_path: "/uploads"
   file_uploader.allowed_extensions:
@@ -27,7 +26,7 @@ parameters:
     - dotx #application/vnd.openxmlformats-officedocument.wordprocessingml.template
     - txt #text/plain
     - rtf #text/rtf
-    
+
   # Folder where originals are uploaded. This is the only folder populated for
   # uploads that are not images
   file_uploader.originals:
@@ -61,6 +60,8 @@ parameters:
       max_width: 1140
       max_height: 1140
 
+
+
 services:
     punk_ave.file_uploader:
         class: PunkAve\FileUploaderBundle\Services\FileUploader
@@ -68,19 +69,7 @@ services:
           - file_base_path: '%file_uploader.file_base_path%'
             web_base_path: '%file_uploader.web_base_path%'
             request: '@request'
-            file_manager: '@punk_ave.file_uploader_file_manager'
             allowed_extensions: '%file_uploader.allowed_extensions%'
             sizes: '%file_uploader.sizes%'
             originals: '%file_uploader.originals%'
-            max_number_of_files: '%file_uploader.max_number_of_files%'
         scope: request
-
-    # You usually won't need this sub-service directly,
-    # however you can access it from a command, which is
-    # convenient if you need to delete files relating to
-    # something in a command context
-    punk_ave.file_uploader_file_manager:
-        class: PunkAve\FileUploaderBundle\Services\FileManager
-        arguments:
-          # For bc reasons we're not changing the names of the parameters
-          - file_base_path: '%file_uploader.file_base_path%'
